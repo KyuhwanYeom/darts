@@ -1,6 +1,12 @@
+#cell이 어떻게 구성되어있는지? 
+""" Genotypes
+    - Genotype: normal/reduce gene + normal/reduce cell output connection (concat)
+    - gene: discrete operation 정보 (w/o output connection)
+    - dag: operation의 시작 노드 (can be mixed or discrete, but Genotype has only discrete information itself)
+"""
 from collections import namedtuple
 
-Genotype = namedtuple('Genotype', 'normal normal_concat reduce reduce_concat')
+Genotype = namedtuple('Genotype', 'normal normal_concat reduce reduce_concat') # 유전자형 정의
 
 PRIMITIVES = [
     'none',

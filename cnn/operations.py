@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-OPS = {
+OPS = { # operation들은 relu-conv-batchnorm 순으로 정의
   'none' : lambda C, stride, affine: Zero(stride),
   'avg_pool_3x3' : lambda C, stride, affine: nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
   'max_pool_3x3' : lambda C, stride, affine: nn.MaxPool2d(3, stride=stride, padding=1),
@@ -91,7 +91,7 @@ class FactorizedReduce(nn.Module):
 
   def __init__(self, C_in, C_out, affine=True):
     super(FactorizedReduce, self).__init__()
-    assert C_out % 2 == 0
+    assert C_out % 2 == 0 # output channel 개수가 짝수면 오류
     self.relu = nn.ReLU(inplace=False)
     self.conv_1 = nn.Conv2d(C_in, C_out // 2, 1, stride=2, padding=0, bias=False)
     self.conv_2 = nn.Conv2d(C_in, C_out // 2, 1, stride=2, padding=0, bias=False) 
