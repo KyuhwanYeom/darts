@@ -27,7 +27,7 @@ class Architect(object): # compute gradients of alphas
       Args
         network_optimizer : optimizer of theta, not optimizer of alpha
     """
-    loss = self.model._loss(input, target)
+    loss = self.model._loss(input, target) #각각 input_train, target_train
     theta = _concat(self.model.parameters()).data # flatten current weights # theta: torch.Size([1930618])
     try:
       moment = _concat(network_optimizer.state[v]['momentum_buffer'] for v in self.model.parameters()).mul_(self.network_momentum) # fetch momentum data from theta optimizer
@@ -51,18 +51,18 @@ class Architect(object): # compute gradients of alphas
     loss.backward() # autograd 를 사용하여 역전파 단계를 계산 # both alpha and theta require grad but only alpha optimizer will step in current phase.
 
   def _backward_step_unrolled(self, input_train, target_train, input_valid, target_valid, eta, network_optimizer): # first order approximation
-    unrolled_model = self._compute_unrolled_model(input_train, target_train, eta, network_optimizer) # theta_pi = theta - lr * grad
-    unrolled_loss = unrolled_model._loss(input_valid, target_valid) # calculate loss on theta_pi
+    unrolled_model = self._compute_unrolled_model(input_train, target_train, eta, network_optimizer) # w' = w - eta * grad(L_train) (one-step)
+    unrolled_loss = unrolled_model._loss(input_valid, target_valid) # w'에 대한 validaiton loss
 
-    unrolled_loss.backward() # this will update theta_pi model, but NOT theta model
+    unrolled_loss.backward() # this will update w' model, but NOT w model
     dalpha = [v.grad for v in unrolled_model.arch_parameters()] # grad(L(w', a), a), part of Eq. 6
     vector = [v.grad.data for v in unrolled_model.parameters()]
-    implicit_grads = self._hessian_vector_product(vector, input_train, target_train)
+    implicit_grads = self._hessian_vector_product(vector, input_train, target_train) # Eq.7에서 second term
 
     for g, ig in zip(dalpha, implicit_grads):
-      g.data.sub_(eta, ig.data) # g = g - eta * ig, from Eq. 6
+      g.data.sub_(eta, ig.data) # g = g - eta * ig, from Eq. 7
 
-    # write updated alpha into original model
+    # unrolled_model에 self.model의 alpha들을 전달
     for v, g in zip(self.model.arch_parameters(), dalpha):
       if v.grad is None:
         v.grad = Variable(g.data)
@@ -92,14 +92,14 @@ class Architect(object): # compute gradients of alphas
   def _hessian_vector_product(self, vector, input, target, r=1e-2):
     R = r / _concat(vector).norm()
     for p, v in zip(self.model.parameters(), vector):
-      p.data.add_(R, v)
+      p.data.add_(R, v) # w+
     loss = self.model._loss(input, target)
-    grads_p = torch.autograd.grad(loss, self.model.arch_parameters())
+    grads_p = torch.autograd.grad(loss, self.model.arch_parameters()) # dalpha{L_train{w+, alpha}}
 
     for p, v in zip(self.model.parameters(), vector):
-      p.data.sub_(2*R, v)
+      p.data.sub_(2*R, v) # w-
     loss = self.model._loss(input, target)
-    grads_n = torch.autograd.grad(loss, self.model.arch_parameters())
+    grads_n = torch.autograd.grad(loss, self.model.arch_parameters()) # dalpha{L_train{w-, alpha}}
 
     for p, v in zip(self.model.parameters(), vector):
       p.data.add_(R, v)

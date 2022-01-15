@@ -89,7 +89,7 @@ class Zero(nn.Module):
 
 class FactorizedReduce(nn.Module):
 
-  def __init__(self, C_in, C_out, affine=True):
+  def __init__(self, C_in, C_out, affine=True): # 2개의 conv layer을 쓴 이유 :  Perhaps they want more coverage in the spatial dimensions when the kernel size is 1x1.
     super(FactorizedReduce, self).__init__()
     assert C_out % 2 == 0 # output channel 개수가 짝수면 오류
     self.relu = nn.ReLU(inplace=False)
