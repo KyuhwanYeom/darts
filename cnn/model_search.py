@@ -78,6 +78,14 @@ class Cell(nn.Module):
 class Network(nn.Module):
 
   def __init__(self, C, num_classes, layers, criterion, steps=4, multiplier=4, stem_multiplier=3):
+    """
+        C: 16
+        num_classes: 10
+        layers: cell의 개수(8)
+        steps: immdediate node의 개수(4)
+        multiplier: output channel of cell = multiplier * ch
+        stem_multiplier: output channel of stem net = stem_multiplier * ch
+    """
     super(Network, self).__init__()
     self._C = C
     self._num_classes = num_classes
@@ -86,17 +94,19 @@ class Network(nn.Module):
     self._steps = steps
     self._multiplier = multiplier
 
-    C_curr = stem_multiplier*C
-    self.stem = nn.Sequential(
+    # stem_multiplier is for stem network,
+    # and multiplier is for general cell
+    C_curr = stem_multiplier*C # 3 * 16
+    self.stem = nn.Sequential(  # stem network, convert 3 channel to c_curr (3 -> 48)
       nn.Conv2d(3, C_curr, 3, padding=1, bias=False),
       nn.BatchNorm2d(C_curr)
     )
  
-    C_prev_prev, C_prev, C_curr = C_curr, C_curr, C
+    C_prev_prev, C_prev, C_curr = C_curr, C_curr, C # 48, 48, 16 (각각 output channel을 의미!)
     self.cells = nn.ModuleList()
     reduction_prev = False
     for i in range(layers):
-      if i in [layers//3, 2*layers//3]:
+      if i in [layers//3, 2*layers//3]: # 각 layer의 1/3, 2/3 지점엔 reduce cell -> stride 2
         C_curr *= 2
         reduction = True
       else:
