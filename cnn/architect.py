@@ -62,7 +62,7 @@ class Architect(object): # compute gradients of alphas
     for g, ig in zip(dalpha, implicit_grads):
       g.data.sub_(eta, ig.data) # g = g - eta * ig, from Eq. 7
 
-    # unrolled_model에 self.model의 alpha들을 전달
+    # update된 alpha를 self.model로 전달
     for v, g in zip(self.model.arch_parameters(), dalpha):
       if v.grad is None:
         v.grad = Variable(g.data)
